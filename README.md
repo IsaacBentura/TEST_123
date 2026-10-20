@@ -15,8 +15,8 @@ Le compte Google (evadsarl26) est partagé : se connecter dans l'une des deux ap
 connecte aussi l'autre. L'ID client OAuth est le même, aucune modification côté Google.
 
 Sur le téléphone du plombier :
-1. Ouvrir https://isaacbentura.github.io/RapportIntervention/ventura/ ▸ ⋮ ▸ « Ajouter à l'écran d'accueil »
-2. Ouvrir https://isaacbentura.github.io/RapportIntervention/kidebouchetou/ ▸ idem
+1. Ouvrir https://isaacbentura.github.io/TEST_123/ventura/ ▸ ⋮ ▸ « Ajouter à l'écran d'accueil »
+2. Ouvrir https://isaacbentura.github.io/TEST_123/kidebouchetou/ ▸ idem
 3. Dans l'une des deux : Réglages ▸ « Se connecter à Google »
 4. Dans Kidebouchetou.com : Réglages ▸ compléter l'en-tête (adresse, téléphone, mail, RCS) et le logo.
 
@@ -25,7 +25,7 @@ Photos HEIC (iPhone) : converties à l'import grâce à heic2any.min.js (1,3 Mo)
 Mise à jour : le même index.html est copié dans ventura/ et kidebouchetou/.
 Ajouter une troisième société : dupliquer un dossier, ajouter une entrée dans COMPANIES en tête du script.
 
-Note : les anciens raccourcis pointant sur la racine (…/RapportIntervention/index.html)
+Note : les anciens raccourcis pointant sur la racine (…/TEST_123/index.html)
 doivent être supprimés ; l'ancien fichier index.html à la racine est remplacé par la page d'accueil.
 Les rapports Ventura déjà saisis sont récupérés depuis le Drive à la première synchronisation.
 
@@ -113,3 +113,14 @@ Sauvegarde (Rapports ▸ menu ☰ ▸ Réglages et sauvegarde) : format v2, tout
 (rapports, clients, notes, carnets, factures… et tout module futur nommé <module>-<société>) + réglages locaux ;
 hors fichiers en attente d'envoi. Restaurer accepte les sauvegardes v2, l'ancien format et les r_*.json bruts.
 Les boutons Réglages sont dans le menu ☰ (Rapports, Facturation) ; Notes : « Carnets, import et réglages ».
+
+## Application Android (APK) – voir android-app/README.md
+Compilée et signée par GitHub Actions (aucune installation sur PC) : `android-app/` + `.github/workflows/android.yml`.
+L'app enveloppe les mêmes pages (choix de société, Rapports, Notes, Facturation) dans une WebView dont le stockage
+est privé à l'application : réinitialiser Chrome ne touche plus aux données. Connexion Google via le navigateur du
+téléphone avec un ID client Android (variable ANDROID_CLIENT_ID du dépôt) ; partage des PDF via la feuille Android ;
+vérification des nouvelles versions sur GitHub Releases. La PWA reste la version PC.
+
+## Adresse (octobre 2026)
+Dépôt renommé RapportIntervention → TEST_123 : l'application est publiée sur https://isaacbentura.github.io/TEST_123/.
+L'ancienne adresse est servie par un petit dépôt de redirection « RapportIntervention » (voir redirection-RapportIntervention.zip).
