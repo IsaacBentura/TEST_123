@@ -258,8 +258,8 @@ dialog h3{margin-bottom:12px}
 
     <div class="sect">Devis / facture</div>
     <div class="row" style="margin-bottom:6px">
-      <button class="addph" onclick="save(true).then(()=>location.href='./factures/#new=devis&rapport='+cur.id)">📄 Créer un devis</button>
-      <button class="addph" onclick="save(true).then(()=>location.href='./factures/#new=facture&rapport='+cur.id)">🧾 Créer une facture</button>
+      <button class="addph" onclick="save(true).then(()=>location.href='./factures/index.html#new=devis&rapport='+cur.id)">📄 Créer un devis</button>
+      <button class="addph" onclick="save(true).then(()=>location.href='./factures/index.html#new=facture&rapport='+cur.id)">🧾 Créer une facture</button>
     </div>
     <div class="sect">Notes liées</div>
     <div id="linkedNotes"></div>
@@ -394,9 +394,9 @@ dialog h3{margin-bottom:12px}
 </dialog>
 <dialog id="dlgApps">
   <h3>Aller à</h3>
-  <button class="optrow" onclick="location.href='./'">📋 Rapports d'intervention</button>
-  <button class="optrow" onclick="location.href='./notes/'">📝 Notes</button>
-  <button class="optrow" onclick="location.href='./factures/'">🧾 Facturation</button>
+  <button class="optrow" onclick="location.href='./index.html'">📋 Rapports d'intervention</button>
+  <button class="optrow" onclick="location.href='./notes/index.html'">📝 Notes</button>
+  <button class="optrow" onclick="location.href='./factures/index.html'">🧾 Facturation</button>
   <button class="optrow" onclick="dlgApps.close();go('clients')">👤 Clients</button>
   <button class="optrow" onclick="dlgApps.close();go('settings')">⚙ Réglages et sauvegarde</button>
   <div class="rg"><button class="btn sec" onclick="dlgApps.close()">Fermer</button></div>
@@ -808,7 +808,27 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
    Société : déterminée par le dossier de l'URL (/ventura/, /kidebouchetou/).
    Tout le stockage local et le dossier Drive sont préfixés par cette clé.
    ========================================================= */
-const APP_VERSION='1.62';const BUILD_DATE='29/09/2026 à 10:50';
+const APP_VERSION='1.72';const BUILD_DATE='20/10/2026 à 10:28';
+/* ========================================================= Enveloppe Android (Capacitor) =========================================================
+   Détection, identifiant client Android (type « Android », sans secret), partage natif, mises à jour par GitHub Releases. */
+const NATIVE=!!(window.Capacitor&&window.Capacitor.isNativePlatform&&window.Capacitor.isNativePlatform());
+const GOOGLE_ANDROID_CLIENT_ID='__GOOGLE_ANDROID_CLIENT_ID__';
+const GITHUB_REPO='isaacbentura/TEST_123';
+const CPL=NATIVE?window.Capacitor.Plugins:{};
+const androidClient=()=>NATIVE&&/\.apps\.googleusercontent\.com$/.test(GOOGLE_ANDROID_CLIENT_ID)?GOOGLE_ANDROID_CLIENT_ID:'';
+const androidScheme=()=>{const id=androidClient();return id?'com.googleusercontent.apps.'+id.replace(/\.apps\.googleusercontent\.com$/,''):''};
+/* partage de fichiers : natif via Filesystem + Share, sinon Web Share / téléchargement */
+async function shareFiles(files,title){
+  if(NATIVE&&CPL.Filesystem&&CPL.Share){const uris=[];for(const f of files){const b64=await new Promise(r=>{const fr=new FileReader();fr.onload=()=>r(fr.result.split(',')[1]);fr.readAsDataURL(f)});const w=await CPL.Filesystem.writeFile({path:f.name,directory:'CACHE',data:b64});uris.push(w.uri)}
+    try{await CPL.Share.share({title,files:uris,dialogTitle:'Envoyer'})}catch(e){}return true}
+  if(navigator.canShare&&navigator.canShare({files})){try{await navigator.share({files,title});return true}catch(e){if(e.name==='AbortError')return true}}
+  for(const fl of files){const a=document.createElement('a');a.href=URL.createObjectURL(fl);a.download=fl.name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},4000);await new Promise(r=>setTimeout(r,400))}return true}
+/* mises à jour de l'APK : dernière Release GitHub */
+async function checkApkUpdate(){if(!NATIVE||!/\//.test(GITHUB_REPO))return;try{const r=await fetch('https://api.github.com/repos/'+GITHUB_REPO+'/releases/latest',{headers:{Accept:'application/vnd.github+json'}});if(!r.ok)return;const j=await r.json();const tag=(j.tag_name||'').replace(/^v/,'');
+  const newer=(a,b)=>{const pa=a.split('.').map(Number),pb=b.split('.').map(Number);for(let i=0;i<Math.max(pa.length,pb.length);i++){if((pa[i]||0)!==(pb[i]||0))return (pa[i]||0)>(pb[i]||0)}return false};
+  if(!tag||!newer(tag,APP_VERSION))return;const apk=(j.assets||[]).find(a=>/\.apk$/i.test(a.name));if(!apk)return;
+  const bar=document.getElementById('updbar');if(!bar)return;bar.querySelector('span').textContent='Nouvelle version '+tag+' disponible';const btn=bar.querySelector('button:last-child');btn.textContent='Télécharger';btn.onclick=()=>{if(CPL.Browser)CPL.Browser.open({url:apk.browser_download_url});else window.open(apk.browser_download_url,'_blank')};bar.classList.remove('hidden')}catch(e){}}
+
 const COMPANIES={
   ventura:{label:'Ventura',color:'#1e3a5f',drive:"Rapports d'intervention",
     defaults:{name:'Établissement Ventura - Groupe EVAD',addr:'20 allée Paul Léon Fargues 95200 Sarcelles',tel:'0603740704',mail:'expressdepannage@yahoo.fr',rcs:'923273635 RCS PONTOISE'}},
@@ -829,7 +849,7 @@ document.getElementById('appTitle').textContent='Rapports – '+COMPANY.label;do
      de l'app (Directory.Data) → indépendant du navigateur.
    - Navigateur : IndexedDB.
    ========================================================= */
-const CAP=window.Capacitor&&window.Capacitor.isNativePlatform&&window.Capacitor.isNativePlatform();
+const CAP=false;
 const FS=CAP?window.Capacitor.Plugins.Filesystem:null;
 const SHARE=CAP?window.Capacitor.Plugins.Share:null;
 const DATA='DATA';const NP=COMPANY_KEY+'/';
@@ -1105,7 +1125,7 @@ async function renderLinkedNotes(){await loadNotes();const el=document.getElemen
   // union avec les notes qui déclarent ce rapport
   notesCache.forEach(n=>{if((n.reportIds||[]).includes(cur.id)&&!ids.includes(n.id))ids.push(n.id)});cur.noteIds=ids;
   el.innerHTML=ids.map(id=>{const n=notesCache.find(x=>x.id===id);return `<div class="lnk"><div class="n"><b>${esc(n?noteTitle(n):'Note absente de ce téléphone')}</b><span>${n?new Date(n.updatedAt).toLocaleDateString('fr-FR')+' · '+(n.photos||[]).length+' photo(s) · '+(n.files||[]).length+' PJ':id}</span></div>
-    ${n?`<button onclick="openTake('${id}')">Reprendre</button><button onclick="location.href='./notes/#note=${id}'">Ouvrir</button>`:''}<button class="del" onclick="unlinkNote('${id}')">×</button></div>`}).join('')||'<p class="hint" style="margin:0 0 8px">Aucune note liée.</p>'}
+    ${n?`<button onclick="openTake('${id}')">Reprendre</button><button onclick="location.href='./notes/index.html#note=${id}'">Ouvrir</button>`:''}<button class="del" onclick="unlinkNote('${id}')">×</button></div>`}).join('')||'<p class="hint" style="margin:0 0 8px">Aucune note liée.</p>'}
 async function linkNoteDialog(){await loadNotes();dlgNotesSearch.value='';renderNoteChooser();dlgNotes.showModal()}
 function renderNoteChooser(){const q=(dlgNotesSearch.value||'').toLowerCase();const el=document.getElementById('noteChooser');
   const rows=notesCache.filter(n=>!q||(noteTitle(n)+' '+n.body+' '+(n.tags||[]).join(' ')).toLowerCase().includes(q)).sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0)).slice(0,50);
@@ -1276,7 +1296,8 @@ async function exportPdf(){
   const pdfBlob=buildReportPdf(cur,settings,clients);const name=reportPdfName(cur);sync.uploadPdf(name,pdfBlob);
   await shareOrDownload(pdfBlob,name,'application/pdf');
 }
-async function shareOrDownload(blob,name,mime){
+async function shareOrDownload(blob,name,mime){await shareFiles([new File([blob],name,{type:mime})],name);return}
+async function shareOrDownload_old(blob,name,mime){
   if(CAP){ // natif : écrire dans le cache puis partager via la feuille Android
     const b64=await new Promise(r=>{const fr=new FileReader();fr.onload=()=>r(fr.result.split(',')[1]);fr.readAsDataURL(blob)});
     const w=await FS.writeFile({path:name,directory:'CACHE',data:b64});
@@ -1373,6 +1394,7 @@ async function importData(file){
   catch(e){alert("Stockage local indisponible. Les rapports ne pourront pas être conservés.\n\n"+e)}
   if(!CAP&&navigator.storage&&navigator.storage.persist)navigator.storage.persist().catch(()=>{});
   if(CAP)document.getElementById('storageNote').textContent="Les rapports sont stockés dans l'espace privé de l'application, indépendamment du navigateur. Ils sont perdus si l'application est désinstallée : faites une sauvegarde de temps en temps.";
+  if(NATIVE&&CPL.App){CPL.App.addListener('appUrlOpen',e=>{if(e&&e.url&&e.url.includes(':/oauth2redirect'))sync.handleNativeReturn(e.url)});CPL.App.addListener('appStateChange',s=>{if(s&&s.isActive)sync.full(false)})}
   renderList();if(!sync.handleRedirect())sync.boot();else sync.boot();const hm=location.hash.match(/^#rapport=(.+)$/);if(hm){history.replaceState(null,'',location.pathname);const r=reports.find(x=>x.id===hm[1]);if(r)openReport(r.id);else toast('Rapport introuvable sur ce téléphone (synchronisez)')}
   if(location.hash==='#clients'){history.replaceState(null,'',location.pathname);go('clients')}
   if(location.hash==='#connexion'||location.hash==='#youtube'){history.replaceState(null,'',location.pathname);go('settings');if(location.hash==='#youtube')setTimeout(()=>document.getElementById('btnYt').scrollIntoView(),300)}setTimeout(()=>videoUploader.run(),3000);
@@ -1382,7 +1404,7 @@ window.addEventListener('beforeunload',()=>{if(cur&&dirty)save(true)});
 /* ---- mises à jour : proposer dès qu'une nouvelle version est prête ---- */
 let swReg=null,reloading=false;
 function offerUpdate(){document.getElementById('updbar').classList.remove('hidden')}
-async function setupUpdates(){
+async function setupUpdates(){if(NATIVE){checkApkUpdate();return}
   try{swReg=await navigator.serviceWorker.register('./sw.js')}catch(e){return}
   if(swReg.waiting)offerUpdate();
   swReg.addEventListener('updatefound',()=>{const nw=swReg.installing;if(!nw)return;nw.addEventListener('statechange',()=>{if(nw.state==='installed'&&navigator.serviceWorker.controller)offerUpdate()})});
@@ -1426,15 +1448,27 @@ const sync={
   async redirectAuth(kind='drive'){
     if(cur&&dirty)await save(true);
     const verifier=this.rnd(64),state=this.rnd(16);
-    sessionStorage.setItem('gauth_pending',JSON.stringify({view:cur?'edit':'list',id:cur&&cur.id,verifier,state,kind}));
+    const pend={view:cur?'edit':'list',id:cur&&cur.id,verifier,state,kind};sessionStorage.setItem('gauth_pending',JSON.stringify(pend));localStorage.setItem('gauth_pending',JSON.stringify(pend));
+    if(NATIVE){if(!androidClient()){toast("Identifiant client Android manquant dans cette version de l'application");return}
+      const p=new URLSearchParams({client_id:androidClient(),redirect_uri:androidScheme()+':/oauth2redirect',response_type:'code',scope:this.SCOPES[kind],access_type:'offline',prompt:'consent select_account',state,code_challenge:await this.sha256b64(verifier),code_challenge_method:'S256',login_hint:localStorage.getItem('ghint')||''});
+      const url='https://accounts.google.com/o/oauth2/v2/auth?'+p.toString();if(CPL.Browser)await CPL.Browser.open({url});else window.open(url,'_system');return}
     const p=new URLSearchParams({client_id:this.clientId(),redirect_uri:this.redirectUri(),response_type:'code',scope:this.SCOPES[kind],access_type:'offline',prompt:'consent select_account',state,code_challenge:await this.sha256b64(verifier),code_challenge_method:'S256',login_hint:localStorage.getItem('ghint')||''});
     location.href='https://accounts.google.com/o/oauth2/v2/auth?'+p.toString();
   },
+  /* retour depuis le navigateur système (lien com.googleusercontent.apps.…:/oauth2redirect?code=…) */
+  async handleNativeReturn(url){try{const u=new URL(url);const q=u.searchParams;const pend=JSON.parse(localStorage.getItem('gauth_pending')||'null');localStorage.removeItem('gauth_pending');
+      if(CPL.Browser)CPL.Browser.close().catch(()=>{});
+      if(q.get('error')){toast('Autorisation refusée : '+q.get('error'));return}if(!pend||pend.state!==q.get('state')){toast('Retour Google invalide, réessayez');return}
+      const r=await fetch('https://oauth2.googleapis.com/token',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({client_id:androidClient(),code:q.get('code'),code_verifier:pend.verifier,grant_type:'authorization_code',redirect_uri:androidScheme()+':/oauth2redirect'})});
+      const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error_description||j.error||('token '+r.status));
+      localStorage.setItem('gauth_client','android');this.storeTokens(pend.kind||'drive',j);if(pend.kind==='yt')toast('YouTube autorisé');else{await this.saveHint();toast('Connecté à Google')}
+      this.renderSettings();this.full(false);videoUploader.stop='';setTimeout(()=>videoUploader.run(),500);
+    }catch(e){console.warn(e);toast('Connexion Google échouée : '+e.message.slice(0,80))}},
   storeTokens(kind,j){const o={t:j.access_token,e:Date.now()+((+j.expires_in)||3600)*1000};this.tok[kind]=o;
     if(j.refresh_token)localStorage.setItem('grefresh_'+kind,j.refresh_token);
     localStorage.setItem('gtok_'+kind,JSON.stringify(o));if(kind==='drive')localStorage.setItem('gconnected','1')},
   async tokenRequest(params){
-    const r=await fetch('https://oauth2.googleapis.com/token',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams(Object.assign({client_id:this.clientId(),client_secret:this.clientSecret()},params))});
+    const r=await fetch('https://oauth2.googleapis.com/token',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams(Object.assign(localStorage.getItem('gauth_client')==='android'&&androidClient()?{client_id:androidClient()}:{client_id:this.clientId(),client_secret:this.clientSecret()},params))});
     const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error_description||j.error||('token '+r.status));return j;
   },
   handleRedirect(){
@@ -1445,7 +1479,7 @@ const sync={
     if(!pend||pend.state!==q.get('state')){toast('Retour Google invalide, réessayez');return true}
     (async()=>{try{
       const j=await this.tokenRequest({code:q.get('code'),code_verifier:pend.verifier,grant_type:'authorization_code',redirect_uri:this.redirectUri()});
-      this.storeTokens(pend.kind||'drive',j);if(pend.kind==='yt'){toast('YouTube autorisé')}else{await this.saveHint();toast('Connecté à Google')}
+      localStorage.setItem('gauth_client','web');this.storeTokens(pend.kind||'drive',j);if(pend.kind==='yt'){toast('YouTube autorisé')}else{await this.saveHint();toast('Connecté à Google')}
       if(pend.view==='edit'&&pend.id){const r=reports.find(x=>x.id===pend.id);if(r){openReport(r.id);(cur.videos||[]).forEach(v=>{if(v.status==='auth')v.status='pending'});renderVideos()}}
       this.renderSettings();this.full(false);videoUploader.stop='';setTimeout(()=>videoUploader.run(),500);
     }catch(e){console.warn(e);toast('Connexion Google échouée : '+e.message.slice(0,80))}})();
@@ -1464,7 +1498,7 @@ const sync={
   async saveHint(){try{const tok=await this.getToken(false,'drive');if(!tok)return;const r=await fetch('https://www.googleapis.com/drive/v3/about?fields=user(emailAddress)',{headers:{Authorization:'Bearer '+tok}});const j=await r.json();if(j.user&&j.user.emailAddress){localStorage.setItem('ghint',j.user.emailAddress);this.renderSettings()}}catch(e){}},
   async connect(){const f=document.getElementById('s_gcid');if(f&&f.value.trim()){settings.gClientId=f.value.trim();await store.saveSettings(settings)}await this.redirectAuth('drive')},
   disconnect(){for(const k of ['drive','yt']){const rt=localStorage.getItem('grefresh_'+k);if(rt)fetch('https://oauth2.googleapis.com/revoke?token='+encodeURIComponent(rt),{method:'POST'}).catch(()=>{})}
-    this.tok={drive:null,yt:null};this.folderId=null;['gtok_drive','gtok_yt','grefresh_drive','grefresh_yt','gconnected','ghint','gtok','grefresh'].forEach(k=>localStorage.removeItem(k));this.renderSettings();this.setStatus('Non connecté à Google');toast('Déconnecté')},
+    this.tok={drive:null,yt:null};this.folderId=null;['gtok_drive','gtok_yt','grefresh_drive','grefresh_yt','gconnected','ghint','gtok','grefresh','gauth_client'].forEach(k=>localStorage.removeItem(k));this.renderSettings();this.setStatus('Non connecté à Google');toast('Déconnecté')},
 
   /* --- appels Drive --- */
   async api(path,opt={},interactive=false){const tok=await this.getToken(interactive,'drive');if(!tok)throw new Error('noauth');
