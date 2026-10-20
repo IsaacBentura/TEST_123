@@ -123,12 +123,12 @@ dialog h3{margin-bottom:12px}.rg{display:flex;gap:10px;margin-top:6px}.rg .btn{f
 <!-- ============ LISTE ============ -->
 <section id="v-list">
   <header class="top">
-    <a class="back" href="../" title="Retour aux rapports"><span class="ico">‹</span><h1 id="appTitle">Notes</h1></a>
+    <a class="back" href="../index.html" title="Retour aux rapports"><span class="ico">‹</span><h1 id="appTitle">Notes</h1></a>
     <button class="ico" onclick="sync.full()" id="btnSync" title="Synchroniser">↻</button>
     <button class="ico" onclick="dlgSort.showModal()" title="Trier">⇅</button>
     <button onclick="go('notebooks')">Carnets</button>
     <button class="ico" onclick="go('trash')" title="Corbeille">🗑</button>
-    <button class="ico" onclick="dlgApps.showModal()" title="Applications">☰</button>
+    <button class="ico" onclick="dlgApps.showModal()" title="Menu">☰</button>
   </header>
   <div class="view">
     <div class="syncbar" id="syncbar"><span id="syncTxt"></span><button id="syncBtn"></button></div>
@@ -191,7 +191,7 @@ dialog h3{margin-bottom:12px}.rg{display:flex;gap:10px;margin-top:6px}.rg .btn{f
       <label class="addph">🎥 Filmer<input type="file" accept="video/*" capture="environment" onchange="addFiles(this.files);this.value=''"></label>
       <label class="addph">🎞 Vidéo galerie<input type="file" accept="video/*" multiple onchange="addFiles(this.files);this.value=''"></label>
     </div>
-    <button class="btn hidden" id="ytAuth" style="width:100%;margin-top:10px" onclick="location.href='../#youtube'">Autoriser YouTube depuis l'app Rapports</button>
+    <button class="btn hidden" id="ytAuth" style="width:100%;margin-top:10px" onclick="location.href='../index.html#youtube'">Autoriser YouTube depuis l'app Rapports</button>
     <p class="hint" style="font-size:13px;color:var(--ink3);margin-top:8px">Les fichiers partent dès que le réseau est disponible ; le PDF de la note contient leurs liens.</p>
     <p class="verline" id="editMeta"></p>
   </div>
@@ -277,10 +277,10 @@ dialog h3{margin-bottom:12px}.rg{display:flex;gap:10px;margin-top:6px}.rg .btn{f
 </dialog>
 <dialog id="dlgApps">
   <h3>Aller à</h3>
-  <button class="optrow" onclick="location.href='../'">📋 Rapports d'intervention</button>
-  <button class="optrow" onclick="location.href='./'">📝 Notes</button>
-  <button class="optrow" onclick="location.href='../factures/'">🧾 Facturation</button>
-  <button class="optrow" onclick="location.href='../factures/#clients'">👤 Clients</button>
+  <button class="optrow" onclick="location.href='../index.html'">📋 Rapports d'intervention</button>
+  <button class="optrow" onclick="location.href='./index.html'">📝 Notes</button>
+  <button class="optrow" onclick="location.href='../factures/index.html'">🧾 Facturation</button>
+  <button class="optrow" onclick="location.href='../factures/index.html#clients'">👤 Clients</button>
   <button class="optrow" onclick="dlgApps.close();go('notebooks')">📚 Carnets, import et réglages</button>
   <div class="rg"><button class="btn sec" onclick="dlgApps.close()">Fermer</button></div>
 </dialog>
@@ -690,7 +690,27 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
 /* =========================================================
    Société (dossier parent : /ventura/notes/ → ventura)
    ========================================================= */
-const APP_VERSION='1.62';const BUILD_DATE='29/09/2026 à 10:50';
+const APP_VERSION='1.72';const BUILD_DATE='20/10/2026 à 10:28';
+/* ========================================================= Enveloppe Android (Capacitor) =========================================================
+   Détection, identifiant client Android (type « Android », sans secret), partage natif, mises à jour par GitHub Releases. */
+const NATIVE=!!(window.Capacitor&&window.Capacitor.isNativePlatform&&window.Capacitor.isNativePlatform());
+const GOOGLE_ANDROID_CLIENT_ID='__GOOGLE_ANDROID_CLIENT_ID__';
+const GITHUB_REPO='isaacbentura/TEST_123';
+const CPL=NATIVE?window.Capacitor.Plugins:{};
+const androidClient=()=>NATIVE&&/\.apps\.googleusercontent\.com$/.test(GOOGLE_ANDROID_CLIENT_ID)?GOOGLE_ANDROID_CLIENT_ID:'';
+const androidScheme=()=>{const id=androidClient();return id?'com.googleusercontent.apps.'+id.replace(/\.apps\.googleusercontent\.com$/,''):''};
+/* partage de fichiers : natif via Filesystem + Share, sinon Web Share / téléchargement */
+async function shareFiles(files,title){
+  if(NATIVE&&CPL.Filesystem&&CPL.Share){const uris=[];for(const f of files){const b64=await new Promise(r=>{const fr=new FileReader();fr.onload=()=>r(fr.result.split(',')[1]);fr.readAsDataURL(f)});const w=await CPL.Filesystem.writeFile({path:f.name,directory:'CACHE',data:b64});uris.push(w.uri)}
+    try{await CPL.Share.share({title,files:uris,dialogTitle:'Envoyer'})}catch(e){}return true}
+  if(navigator.canShare&&navigator.canShare({files})){try{await navigator.share({files,title});return true}catch(e){if(e.name==='AbortError')return true}}
+  for(const fl of files){const a=document.createElement('a');a.href=URL.createObjectURL(fl);a.download=fl.name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},4000);await new Promise(r=>setTimeout(r,400))}return true}
+/* mises à jour de l'APK : dernière Release GitHub */
+async function checkApkUpdate(){if(!NATIVE||!/\//.test(GITHUB_REPO))return;try{const r=await fetch('https://api.github.com/repos/'+GITHUB_REPO+'/releases/latest',{headers:{Accept:'application/vnd.github+json'}});if(!r.ok)return;const j=await r.json();const tag=(j.tag_name||'').replace(/^v/,'');
+  const newer=(a,b)=>{const pa=a.split('.').map(Number),pb=b.split('.').map(Number);for(let i=0;i<Math.max(pa.length,pb.length);i++){if((pa[i]||0)!==(pb[i]||0))return (pa[i]||0)>(pb[i]||0)}return false};
+  if(!tag||!newer(tag,APP_VERSION))return;const apk=(j.assets||[]).find(a=>/\.apk$/i.test(a.name));if(!apk)return;
+  const bar=document.getElementById('updbar');if(!bar)return;bar.querySelector('span').textContent='Nouvelle version '+tag+' disponible';const btn=bar.querySelector('button:last-child');btn.textContent='Télécharger';btn.onclick=()=>{if(CPL.Browser)CPL.Browser.open({url:apk.browser_download_url});else window.open(apk.browser_download_url,'_blank')};bar.classList.remove('hidden')}catch(e){}}
+
 const COMPANIES={
   ventura:{label:'Ventura',color:'#1e3a5f',drive:'Notes – Ventura',defaults:{name:'Établissement Ventura - Groupe EVAD',addr:'20 allée Paul Léon Fargues 95200 Sarcelles',tel:'0603740704',mail:'expressdepannage@yahoo.fr',rcs:'923273635 RCS PONTOISE'}},
   kidebouchetou:{label:'Kidebouchetou.com',color:'#0b6e6a',drive:'Notes – Kidebouchetou.com',defaults:{name:'Kidebouchetou.com',addr:'20 allée Paul Léon Fargues 95200 Sarcelles',tel:'0603740704',mail:'expressdepannage@yahoo.fr',rcs:'923273635 RCS PONTOISE'}},
@@ -934,7 +954,7 @@ const repDate=r=>r.date?new Date(r.date+'T00:00:00').toLocaleDateString('fr-FR')
 async function renderLinkedReports(){repCache=await repDb.all();const el=document.getElementById('linkedReports');const ids=cur.reportIds||[];
   repCache.forEach(r=>{if((r.noteIds||[]).includes(cur.id)&&!ids.includes(r.id))ids.push(r.id)});cur.reportIds=ids;
   el.innerHTML=ids.map(id=>{const r=repCache.find(x=>x.id===id);return `<div class="lnk"><div class="n"><b>${esc(r?repLabel(r):'Rapport absent de ce téléphone')}</b><span>${r?repDate(r)+(r.obj?' · '+r.obj:''):id}</span></div>
-    ${r?`<button onclick="location.href='../#rapport=${id}'">Ouvrir</button>`:''}<button class="del" onclick="unlinkReport('${id}')">×</button></div>`}).join('')||'<p class="hint" style="margin:0 0 8px;font-size:13px;color:var(--ink3)">Aucun rapport lié.</p>'}
+    ${r?`<button onclick="location.href='../index.html#rapport=${id}'">Ouvrir</button>`:''}<button class="del" onclick="unlinkReport('${id}')">×</button></div>`}).join('')||'<p class="hint" style="margin:0 0 8px;font-size:13px;color:var(--ink3)">Aucun rapport lié.</p>'}
 async function linkReportDialog(){repCache=await repDb.all();dlgRepSearch.value='';renderReportChooser();dlgReports.showModal()}
 function renderReportChooser(){const q=(dlgRepSearch.value||'').toLowerCase();const el=document.getElementById('repChooser');
   const rows=repCache.filter(r=>!q||(repLabel(r)+' '+(r.obj||'')).toLowerCase().includes(q)).sort((a,b)=>(b.date||'').localeCompare(a.date||'')||(b.updatedAt||0)-(a.updatedAt||0)).slice(0,50);
@@ -957,7 +977,7 @@ async function createReport(){readEditor();await save(true);repCache=await repDb
   if(cr_files.checked&&!cr_files.disabled)for(const f of (cur.files||[]).filter(f=>f.kind!=='video')){if(!f.link){skipped++;continue}r.files.push({id:uid(),name:f.name,mime:f.mime,size:f.size,kind:f.kind,dur:f.dur,cap:f.cap,driveId:f.driveId,link:f.link,status:'done',fromNote:cur.id})}
   r.rev=Date.now();await repDb.put(r);cur.reportIds=cur.reportIds||[];cur.reportIds.push(r.id);await saveLinkOnly();dlgCreate.close();
   if(skipped)alert(`${skipped} fichier(s) pas encore envoyé(s) n'ont pas été repris.`);
-  location.href='../#rapport='+r.id}
+  location.href='../index.html#rapport='+r.id}
 
 
 /* =========================================================
@@ -1113,9 +1133,7 @@ async function exportPdf(){
       doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(...(f.link?BLUE:GREY));doc.text(txt(lines[1]),x,y+8);if(f.link)doc.link(ML,y,CW,Math.max(10,f.thumb?18:10),{url:f.link});y+=f.thumb?20:12}}
   const pages=doc.getNumberOfPages();for(let i=1;i<=pages;i++){doc.setPage(i);doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(...GREY);doc.text(txt(S.footer||`${S.name} – Note – ${n.title||''}`),ML,H-10,{maxWidth:CW-25});doc.text(`Page ${i} / ${pages}`,W-MR,H-10,{align:'right'})}
   const name=`Note_${(n.title||'note').replace(/[^\wÀ-ÿ-]+/g,'_').slice(0,50)}.pdf`;const blob=doc.output('blob');
-  const file=new File([blob],name,{type:'application/pdf'});
-  if(navigator.canShare&&navigator.canShare({files:[file]})){try{await navigator.share({files:[file],title:name});return}catch(e){if(e.name==='AbortError')return}}
-  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},2000);
+  await shareFiles([new File([blob],name,{type:'application/pdf'})],name);
 }
 
 /* =========================================================
@@ -1133,8 +1151,8 @@ const sync={
   pending(){return JSON.parse(localStorage.getItem(LS('notes_pending'))||'{"n":{},"nb":{}}')},
   markDeleted(kind,id){const p=this.pending();p[kind][id]=Date.now();localStorage.setItem(LS('notes_pending'),JSON.stringify(p))},
   setStatus(t,cls){const bar=document.getElementById('syncbar');bar.className='syncbar '+(cls||'');document.getElementById('syncTxt').textContent=t;document.getElementById('btnSync').classList.toggle('spin',cls==='busy');
-    const b=document.getElementById('syncBtn');if(!this.connected()){b.textContent='Se connecter';b.onclick=()=>location.href='../#connexion'}else{b.textContent=cls==='err'?'Réessayer':'';b.onclick=()=>this.full()}},
-  async tokenRequest(params){const r=await fetch('https://oauth2.googleapis.com/token',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams(Object.assign({client_id:this.clientId(),client_secret:this.clientSecret()},params))});const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error_description||j.error||('token '+r.status));return j},
+    const b=document.getElementById('syncBtn');if(!this.connected()){b.textContent='Se connecter';b.onclick=()=>location.href='../index.html#connexion'}else{b.textContent=cls==='err'?'Réessayer':'';b.onclick=()=>this.full()}},
+  async tokenRequest(params){const r=await fetch('https://oauth2.googleapis.com/token',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams(Object.assign(localStorage.getItem('gauth_client')==='android'&&androidClient()?{client_id:androidClient()}:{client_id:this.clientId(),client_secret:this.clientSecret()},params))});const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error_description||j.error||('token '+r.status));return j},
   async getToken(){
     if(this.tok&&Date.now()<this.tok.e-60000)return this.tok.t;
     const saved=JSON.parse(localStorage.getItem('gtok_drive')||'null');if(saved&&Date.now()<saved.e-60000){this.tok=saved;return saved.t}
@@ -1242,7 +1260,7 @@ function handleShareTarget(){const q=new URLSearchParams(location.search);
 
 /* ================= mises à jour ================= */
 let swReg=null,reloading=false;
-async function setupUpdates(){if(!('serviceWorker' in navigator)||!location.protocol.startsWith('http'))return;
+async function setupUpdates(){if(NATIVE){checkApkUpdate();return}if(!('serviceWorker' in navigator)||!location.protocol.startsWith('http'))return;
   try{swReg=await navigator.serviceWorker.register('./sw.js')}catch(e){return}
   if(swReg.waiting)updbar.classList.remove('hidden');
   swReg.addEventListener('updatefound',()=>{const nw=swReg.installing;if(!nw)return;nw.addEventListener('statechange',()=>{if(nw.state==='installed'&&navigator.serviceWorker.controller)updbar.classList.remove('hidden')})});
