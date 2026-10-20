@@ -690,12 +690,12 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
 /* =========================================================
    Société (dossier parent : /ventura/notes/ → ventura)
    ========================================================= */
-const APP_VERSION='1.72';const BUILD_DATE='20/10/2026 à 10:28';
+const APP_VERSION='1.73';const BUILD_DATE='20/10/2026 à 11:30';
 /* ========================================================= Enveloppe Android (Capacitor) =========================================================
    Détection, identifiant client Android (type « Android », sans secret), partage natif, mises à jour par GitHub Releases. */
 const NATIVE=!!(window.Capacitor&&window.Capacitor.isNativePlatform&&window.Capacitor.isNativePlatform());
 const GOOGLE_ANDROID_CLIENT_ID='__GOOGLE_ANDROID_CLIENT_ID__';
-const GITHUB_REPO='isaacbentura/TEST_123';
+const GITHUB_REPO='mongiamamie/RapportIntervention';
 const CPL=NATIVE?window.Capacitor.Plugins:{};
 const androidClient=()=>NATIVE&&/\.apps\.googleusercontent\.com$/.test(GOOGLE_ANDROID_CLIENT_ID)?GOOGLE_ANDROID_CLIENT_ID:'';
 const androidScheme=()=>{const id=androidClient();return id?'com.googleusercontent.apps.'+id.replace(/\.apps\.googleusercontent\.com$/,''):''};
