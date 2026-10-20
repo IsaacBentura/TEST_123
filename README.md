@@ -15,8 +15,8 @@ Le compte Google (evadsarl26) est partagé : se connecter dans l'une des deux ap
 connecte aussi l'autre. L'ID client OAuth est le même, aucune modification côté Google.
 
 Sur le téléphone du plombier :
-1. Ouvrir https://isaacbentura.github.io/TEST_123/ventura/ ▸ ⋮ ▸ « Ajouter à l'écran d'accueil »
-2. Ouvrir https://isaacbentura.github.io/TEST_123/kidebouchetou/ ▸ idem
+1. Ouvrir https://mongiamamie.github.io/RapportIntervention/ventura/ ▸ ⋮ ▸ « Ajouter à l'écran d'accueil »
+2. Ouvrir https://mongiamamie.github.io/RapportIntervention/kidebouchetou/ ▸ idem
 3. Dans l'une des deux : Réglages ▸ « Se connecter à Google »
 4. Dans Kidebouchetou.com : Réglages ▸ compléter l'en-tête (adresse, téléphone, mail, RCS) et le logo.
 
@@ -122,5 +122,5 @@ téléphone avec un ID client Android (variable ANDROID_CLIENT_ID du dépôt) ; 
 vérification des nouvelles versions sur GitHub Releases. La PWA reste la version PC.
 
 ## Adresse (octobre 2026)
-Dépôt renommé RapportIntervention → TEST_123 : l'application est publiée sur https://isaacbentura.github.io/TEST_123/.
-L'ancienne adresse est servie par un petit dépôt de redirection « RapportIntervention » (voir redirection-RapportIntervention.zip).
+Dépôt transféré sur le compte mongiamamie (octobre 2026) : l'application est publiée sur https://mongiamamie.github.io/RapportIntervention/.
+L'ancienne adresse isaacbentura.github.io/RapportIntervention est servie par un dépôt de redirection sur le compte IsaacBentura, à supprimer une fois les icônes recréées.
