@@ -163,7 +163,7 @@ dialog h3{margin-bottom:12px}.rg{display:flex;gap:10px;margin-top:6px}.rg .btn{f
 <!-- ============ LISTE ============ -->
 <section id="v-list">
   <header class="top">
-    <a class="back" href="../" title="Retour aux rapports"><span class="ico">‹</span><h1 id="appTitle">Facturation</h1></a>
+    <a class="back" href="../index.html" title="Retour aux rapports"><span class="ico">‹</span><h1 id="appTitle">Facturation</h1></a>
     <button class="ico" onclick="sync.full()" id="btnSync" title="Synchroniser">↻</button>
     <button class="ico" onclick="dlgApps.showModal()" title="Menu">☰</button>
   </header>
@@ -297,9 +297,9 @@ dialog h3{margin-bottom:12px}.rg{display:flex;gap:10px;margin-top:6px}.rg .btn{f
 </dialog>
 <dialog id="dlgApps">
   <h3>Aller à</h3>
-  <button class="optrow" onclick="location.href='../'">📋 Rapports d'intervention</button>
-  <button class="optrow" onclick="location.href='../notes/'">📝 Notes</button>
-  <button class="optrow" onclick="location.href='./'">🧾 Facturation</button>
+  <button class="optrow" onclick="location.href='../index.html'">📋 Rapports d'intervention</button>
+  <button class="optrow" onclick="location.href='../notes/index.html'">📝 Notes</button>
+  <button class="optrow" onclick="location.href='./index.html'">🧾 Facturation</button>
   <button class="optrow" onclick="dlgApps.close();go('clients')">👤 Clients</button>
   <button class="optrow" onclick="dlgApps.close();go('settings')">⚙ Réglages facturation</button>
   <div class="rg"><button class="btn sec" onclick="dlgApps.close()">Fermer</button></div>
@@ -708,7 +708,27 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
 </script>
 <script>
 /* ========================================================= Société ========================================================= */
-const APP_VERSION='1.62';const BUILD_DATE='29/09/2026 à 10:50';
+const APP_VERSION='1.72';const BUILD_DATE='20/10/2026 à 10:28';
+/* ========================================================= Enveloppe Android (Capacitor) =========================================================
+   Détection, identifiant client Android (type « Android », sans secret), partage natif, mises à jour par GitHub Releases. */
+const NATIVE=!!(window.Capacitor&&window.Capacitor.isNativePlatform&&window.Capacitor.isNativePlatform());
+const GOOGLE_ANDROID_CLIENT_ID='__GOOGLE_ANDROID_CLIENT_ID__';
+const GITHUB_REPO='isaacbentura/TEST_123';
+const CPL=NATIVE?window.Capacitor.Plugins:{};
+const androidClient=()=>NATIVE&&/\.apps\.googleusercontent\.com$/.test(GOOGLE_ANDROID_CLIENT_ID)?GOOGLE_ANDROID_CLIENT_ID:'';
+const androidScheme=()=>{const id=androidClient();return id?'com.googleusercontent.apps.'+id.replace(/\.apps\.googleusercontent\.com$/,''):''};
+/* partage de fichiers : natif via Filesystem + Share, sinon Web Share / téléchargement */
+async function shareFiles(files,title){
+  if(NATIVE&&CPL.Filesystem&&CPL.Share){const uris=[];for(const f of files){const b64=await new Promise(r=>{const fr=new FileReader();fr.onload=()=>r(fr.result.split(',')[1]);fr.readAsDataURL(f)});const w=await CPL.Filesystem.writeFile({path:f.name,directory:'CACHE',data:b64});uris.push(w.uri)}
+    try{await CPL.Share.share({title,files:uris,dialogTitle:'Envoyer'})}catch(e){}return true}
+  if(navigator.canShare&&navigator.canShare({files})){try{await navigator.share({files,title});return true}catch(e){if(e.name==='AbortError')return true}}
+  for(const fl of files){const a=document.createElement('a');a.href=URL.createObjectURL(fl);a.download=fl.name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},4000);await new Promise(r=>setTimeout(r,400))}return true}
+/* mises à jour de l'APK : dernière Release GitHub */
+async function checkApkUpdate(){if(!NATIVE||!/\//.test(GITHUB_REPO))return;try{const r=await fetch('https://api.github.com/repos/'+GITHUB_REPO+'/releases/latest',{headers:{Accept:'application/vnd.github+json'}});if(!r.ok)return;const j=await r.json();const tag=(j.tag_name||'').replace(/^v/,'');
+  const newer=(a,b)=>{const pa=a.split('.').map(Number),pb=b.split('.').map(Number);for(let i=0;i<Math.max(pa.length,pb.length);i++){if((pa[i]||0)!==(pb[i]||0))return (pa[i]||0)>(pb[i]||0)}return false};
+  if(!tag||!newer(tag,APP_VERSION))return;const apk=(j.assets||[]).find(a=>/\.apk$/i.test(a.name));if(!apk)return;
+  const bar=document.getElementById('updbar');if(!bar)return;bar.querySelector('span').textContent='Nouvelle version '+tag+' disponible';const btn=bar.querySelector('button:last-child');btn.textContent='Télécharger';btn.onclick=()=>{if(CPL.Browser)CPL.Browser.open({url:apk.browser_download_url});else window.open(apk.browser_download_url,'_blank')};bar.classList.remove('hidden')}catch(e){}}
+
 const COMPANIES={
   ventura:{label:'Ventura',color:'#1e3a5f',drive:'Facturation – Ventura',rapportsDrive:"Rapports d'intervention",prefix:{devis:'D',facture:'F'},defaults:{name:'Établissement Ventura - Groupe EVAD',addr:'20 allée Paul Léon Fargues 95200 Sarcelles',tel:'0603740704',mail:'expressdepannage@yahoo.fr',rcs:'923273635 RCS PONTOISE'}},
   kidebouchetou:{label:'Kidebouchetou.com',color:'#0b6e6a',drive:'Facturation – Kidebouchetou.com',rapportsDrive:"Rapports d'intervention – Kidebouchetou.com",prefix:{devis:'D',facture:'F'},defaults:{name:'Kidebouchetou.com',addr:'20 allée Paul Léon Fargues 95200 Sarcelles',tel:'0603740704',mail:'expressdepannage@yahoo.fr',rcs:'923273635 RCS PONTOISE'}},
@@ -911,7 +931,7 @@ async function saveClient(){const name=c_name.value.trim();if(!name){c_name.focu
 /* ========================================================= Rapports liés ========================================================= */
 const repLabel=r=>(r.addr||'(sans adresse)')+(r.num?' · n° '+r.num:'');
 function renderLinkedReports(){const el=document.getElementById('linkedReports');const ids=cur.reportIds||[];
-  el.innerHTML=ids.map(id=>{const r=reports.find(x=>x.id===id);return `<div class="lnk"><div class="n"><b>${esc(r?repLabel(r):'Rapport absent de ce téléphone')}</b><span>${r?(r.date?new Date(r.date+'T00:00:00').toLocaleDateString('fr-FR'):'')+(r.obj?' · '+esc(r.obj):''):id}</span></div>${r?`<button onclick="location.href='../#rapport=${id}'">Ouvrir</button>`:''}<button class="del" onclick="cur.reportIds=cur.reportIds.filter(x=>x!=='${id}');renderLinkedReports();mark()">×</button></div>`}).join('')||'<p class="hint" style="margin:0 0 8px;font-size:13px;color:var(--ink3)">Aucun rapport lié. Le n° de rapport est imprimé sur le document.</p>'}
+  el.innerHTML=ids.map(id=>{const r=reports.find(x=>x.id===id);return `<div class="lnk"><div class="n"><b>${esc(r?repLabel(r):'Rapport absent de ce téléphone')}</b><span>${r?(r.date?new Date(r.date+'T00:00:00').toLocaleDateString('fr-FR'):'')+(r.obj?' · '+esc(r.obj):''):id}</span></div>${r?`<button onclick="location.href='../index.html#rapport=${id}'">Ouvrir</button>`:''}<button class="del" onclick="cur.reportIds=cur.reportIds.filter(x=>x!=='${id}');renderLinkedReports();mark()">×</button></div>`}).join('')||'<p class="hint" style="margin:0 0 8px;font-size:13px;color:var(--ink3)">Aucun rapport lié. Le n° de rapport est imprimé sur le document.</p>'}
 async function linkReportDialog(){reports=await repDb.all('reports');dlgRepSearch.value='';renderReportChooser();dlgReports.showModal()}
 function renderReportChooser(){const q=(dlgRepSearch.value||'').toLowerCase();const el=document.getElementById('repChooser');const rows=reports.filter(r=>!q||(repLabel(r)+' '+(r.obj||'')).toLowerCase().includes(q)).sort((a,b)=>(b.date||'').localeCompare(a.date||'')).slice(0,50);
   el.innerHTML=rows.length?rows.map(r=>`<button class="chooser ${(cur.reportIds||[]).includes(r.id)?'on':''}" onclick="toggleRep('${r.id}')"><b>${esc(repLabel(r))}</b><span>${r.date?new Date(r.date+'T00:00:00').toLocaleDateString('fr-FR'):''}${r.obj?' · '+esc(r.obj):''}</span></button>`).join(''):'<p class="hint">Aucun rapport sur ce téléphone.</p>'}
@@ -973,8 +993,7 @@ async function exportPdf(){readEditor();await save(true);const {jsPDF}=window.js
   const head_=Object.assign({},head,JSON.parse(localStorage.getItem(LS('settings'))||'{}'));
   for(const id of (d.reportIds||[])){const r=reports.find(x=>x.id===id);if(!r)continue;try{const rb=buildReportPdf(r,head_,clients);files.push(new File([rb],reportPdfName(r),{type:'application/pdf'}))}catch(e){console.warn('PDF rapport',e)}}
   if(files.length>1)toast(`${files.length} pièces : ${isF?'facture':'devis'} + ${files.length-1} rapport(s)`);
-  if(navigator.canShare&&navigator.canShare({files})){try{await navigator.share({files,title:name});return}catch(e){if(e.name==='AbortError')return}}
-  for(const fl of files){const a=document.createElement('a');a.href=URL.createObjectURL(fl);a.download=fl.name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},4000);await new Promise(r=>setTimeout(r,400))}}
+  await shareFiles(files,name)}
 const DAYS='LUNDI|MARDI|MERCREDI|JEUDI|VENDREDI|SAMEDI|DIMANCHE';
 
 const reDay=new RegExp(`^(${DAYS})\\s+\\d{1,2}[\\/.-]\\d{1,2}[\\/.-]\\d{2,4}\\s*:?$`,'i');
@@ -1107,15 +1126,14 @@ function buildReportPdf(r,S,clientsList){
 
 
 /* ========================================================= Export CSV ========================================================= */
-function exportCsv(kind){const from=x_from.value||'0000',to=x_to.value||'9999';const inv=live().filter(d=>d.type==='facture'&&d.num&&d.date>=from&&d.date<=to).sort((a,b)=>a.num.localeCompare(b.num));
+async function exportCsv(kind){const from=x_from.value||'0000',to=x_to.value||'9999';const inv=live().filter(d=>d.type==='facture'&&d.num&&d.date>=from&&d.date<=to).sort((a,b)=>a.num.localeCompare(b.num));
   const sep=';',q=v=>'"'+String(v??'').replace(/"/g,'""')+'"',num=n=>(Math.round((+n||0)*100)/100).toFixed(2).replace('.',',');let rows=[];
   if(kind==='factures'){rows.push(['Numéro','Date','Échéance','Client','SIRET client','Objet','Total HT','Base TVA 20','TVA 20','Base TVA 10','TVA 10','Base TVA 5,5','TVA 5,5','Base TVA 0','Total TVA','Total TTC','Acompte','Réglé','Reste dû','Statut','Devis d\'origine']);
     for(const d of inv){const t=totals(d),c=d.clientSnap||{};const v=r=>t.vat[r]||{base:0,tva:0};rows.push([d.num,d.date,d.dueDate,c.name||clientName(d.clientId),c.siret||'',d.obj,num(t.ht),num(v('20').base),num(v('20').tva),num(v('10').base),num(v('10').tva),num(v('5.5').base),num(v('5.5').tva),num(v('0').base),num(t.tva),num(t.ttc),num(t.dep),num(t.paid),num(Math.max(0,t.rest)),stLabel(d,status(d)),(docs.find(x=>x.id===d.fromDevisId)||{}).num||''])}}
   else{rows.push(['Date paiement','Facture','Client','Montant','Mode','Note']);for(const d of inv)for(const p of d.payments||[])if(p.date>=from&&p.date<=to)rows.push([p.date,d.num,(d.clientSnap||{}).name||clientName(d.clientId),num(p.amount),p.mode,p.note||''])
     rows.sort((a,b)=>a[0]<b[0]?-1:1)}
   const csv='\ufeff'+rows.map(r=>r.map(q).join(sep)).join('\r\n');const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});const name=`${kind}_${COMPANY.label.replace(/\W+/g,'')}_${from.slice(0,10)}_${to.slice(0,10)}.csv`;
-  const file=new File([blob],name,{type:'text/csv'});if(navigator.canShare&&navigator.canShare({files:[file]})){navigator.share({files:[file],title:name}).catch(()=>{});return}
-  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000);toast(rows.length-1+' ligne(s) exportée(s)')}
+  await shareFiles([new File([blob],name,{type:'text/csv'})],name);toast(rows.length-1+' ligne(s) exportée(s)')}
 
 /* ========================================================= Réglages ========================================================= */
 async function renderSyncTrash(){const el=document.getElementById('syncTrash');if(!el)return;await syncBackup.purge();const items=await syncBackup.all('doc');el.innerHTML=items.length?items.map(x=>`<div class="cl"><div class="n"><b>${x.data.type==='devis'?'Devis':'Facture'} ${esc(x.data.num||'(brouillon)')}</b><span>${esc(clientName(x.data.clientId))} · retiré le ${new Date(x.at).toLocaleDateString('fr-FR')}</span></div><button onclick="restoreBackup('${x.key}')">Restaurer</button></div>`).join(''):'<p class="hint" style="margin:0">Rien à restaurer.</p>'}
@@ -1133,8 +1151,8 @@ const sync={
   configured(){return /\.apps\.googleusercontent\.com$/.test(this.clientId())&&this.clientSecret().length>10&&!/^__/.test(this.clientSecret())},
   connected(){return localStorage.getItem('gconnected')==='1'},
   pending(){return JSON.parse(localStorage.getItem(LS('fact_pending'))||'{}')},markDeleted(id){const p=this.pending();p[id]=Date.now();localStorage.setItem(LS('fact_pending'),JSON.stringify(p))},
-  setStatus(t,cls){const bar=document.getElementById('syncbar');bar.className='syncbar '+(cls||'');syncTxt.textContent=t;btnSync.classList.toggle('spin',cls==='busy');const b=syncBtn;if(!this.connected()){b.textContent='Se connecter';b.onclick=()=>location.href='../#connexion'}else{b.textContent=cls==='err'?'Réessayer':'';b.onclick=()=>this.full()}},
-  async tokenRequest(params){const r=await fetch('https://oauth2.googleapis.com/token',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams(Object.assign({client_id:this.clientId(),client_secret:this.clientSecret()},params))});const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error_description||j.error||('token '+r.status));return j},
+  setStatus(t,cls){const bar=document.getElementById('syncbar');bar.className='syncbar '+(cls||'');syncTxt.textContent=t;btnSync.classList.toggle('spin',cls==='busy');const b=syncBtn;if(!this.connected()){b.textContent='Se connecter';b.onclick=()=>location.href='../index.html#connexion'}else{b.textContent=cls==='err'?'Réessayer':'';b.onclick=()=>this.full()}},
+  async tokenRequest(params){const r=await fetch('https://oauth2.googleapis.com/token',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams(Object.assign(localStorage.getItem('gauth_client')==='android'&&androidClient()?{client_id:androidClient()}:{client_id:this.clientId(),client_secret:this.clientSecret()},params))});const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error_description||j.error||('token '+r.status));return j},
   async getToken(){if(this.tok&&Date.now()<this.tok.e-60000)return this.tok.t;const saved=JSON.parse(localStorage.getItem('gtok_drive')||'null');if(saved&&Date.now()<saved.e-60000){this.tok=saved;return saved.t}
     const rt=localStorage.getItem('grefresh_drive');if(!rt||!this.configured()||!navigator.onLine)return null;
     try{const j=await this.tokenRequest({refresh_token:rt,grant_type:'refresh_token'});this.tok={t:j.access_token,e:Date.now()+((+j.expires_in)||3600)*1000};localStorage.setItem('gtok_drive',JSON.stringify(this.tok));return this.tok.t}
@@ -1194,7 +1212,7 @@ const sync={
 
 /* ========================================================= Mises à jour / démarrage ========================================================= */
 let swReg=null,reloading=false;
-async function setupUpdates(){if(!('serviceWorker' in navigator)||!location.protocol.startsWith('http'))return;try{swReg=await navigator.serviceWorker.register('./sw.js')}catch(e){return}
+async function setupUpdates(){if(NATIVE){checkApkUpdate();return}if(!('serviceWorker' in navigator)||!location.protocol.startsWith('http'))return;try{swReg=await navigator.serviceWorker.register('./sw.js')}catch(e){return}
   if(swReg.waiting)updbar.classList.remove('hidden');swReg.addEventListener('updatefound',()=>{const nw=swReg.installing;if(!nw)return;nw.addEventListener('statechange',()=>{if(nw.state==='installed'&&navigator.serviceWorker.controller)updbar.classList.remove('hidden')})});
   const had=!!navigator.serviceWorker.controller;navigator.serviceWorker.addEventListener('controllerchange',()=>{if(!had||reloading)return;reloading=true;location.reload()});
   const check=()=>swReg.update().catch(()=>{});setInterval(check,30*60000);document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')check()})}
